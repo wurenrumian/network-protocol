@@ -22,27 +22,27 @@
 └── src/               # 选定版本的上游源码与源码导航
 ```
 
-| 模块 | 关注内容 |
-| --- | --- |
-| [protocol-abstraction](protocol-abstraction/) | 报文抽象、编码、字节序、TLV、校验和扩展 |
-| [ethernet](ethernet/) | Ethernet 帧、EtherType、MTU、网卡收发边界 |
-| [vlan-bridge](vlan-bridge/) | VLAN、bridge、MAC 学习、STP、LACP、LLDP |
-| [arp-ndp](arp-ndp/) | ARP、IPv6 NDP、邻居缓存、NUD、DAD |
-| [dhcp](dhcp/) | DHCPv4/v6、地址分配、租约和重试 |
-| [ipv4-ipv6](ipv4-ipv6/) | IPv4/IPv6、分片、扩展头和 PMTU |
-| [icmp](icmp/) | ICMP/ICMPv6、差错报告、Echo 和 PTB |
-| [routing](routing/) | RIP、OSPF、BGP、路由状态机和转发控制面 |
-| [udp](udp/) | UDP 报文、端口复用、校验和和收发路径 |
-| [tcp](tcp/) | TCP 连接、序列号、ACK、重传、流控和拥塞控制 |
-| [dns](dns/) | DNS wire format、递归、缓存、委派和 DNSSEC 边界 |
-| [tls](tls/) | TLS record、握手、密钥交换和会话恢复 |
-| [http1-1](http1-1/) | HTTP/1.1 解析、消息 framing、keepalive 和 chunked |
-| [http2](http2/) | HTTP/2 frame、stream、HPACK 和流控 |
-| [quic-http3](quic-http3/) | QUIC packet、ACK/loss、拥塞控制和 HTTP/3 |
-| [rpc](rpc/) | protobuf 编码、gRPC call、metadata、deadline 和取消 |
-| [high-performance](high-performance/) | Reactor、epoll、io_uring、零拷贝和高速 I/O |
-| [rdma](rdma/) | MR、QP、WR/WC、CQ、RDMA CM 和 RoCE |
-| [custom-protocol](custom-protocol/) | RESP、MySQL、Kafka 与自定义协议设计方法 |
+| 模块 | 网络层次 | 关注内容 |
+| --- | --- | --- |
+| [protocol-abstraction](protocol-abstraction/) | 横向（L1–L7） | 报文抽象、编码、字节序、TLV、校验和扩展 |
+| [ethernet](ethernet/) | L2 链路层 | Ethernet 帧、EtherType、MTU、网卡收发边界 |
+| [vlan-bridge](vlan-bridge/) | L2 链路层 | VLAN、bridge、MAC 学习、STP、LACP、LLDP |
+| [arp-ndp](arp-ndp/) | L2.5 邻居/边界层 | ARP、IPv6 NDP、邻居缓存、NUD、DAD |
+| [dhcp](dhcp/) | L7 应用层（配置 L3） | DHCPv4/v6、地址分配、租约和重试 |
+| [ipv4-ipv6](ipv4-ipv6/) | L3 网络层 | IPv4/IPv6、分片、扩展头和 PMTU |
+| [icmp](icmp/) | L3 网络层 | ICMP/ICMPv6、差错报告、Echo 和 PTB |
+| [routing](routing/) | L3 网络层（控制面） | RIP、OSPF、BGP、路由状态机和转发控制面 |
+| [udp](udp/) | L4 传输层 | UDP 报文、端口复用、校验和和收发路径 |
+| [tcp](tcp/) | L4 传输层 | TCP 连接、序列号、ACK、重传、流控和拥塞控制 |
+| [dns](dns/) | L7 应用层 | DNS wire format、递归、缓存、委派和 DNSSEC 边界 |
+| [tls](tls/) | L5–L6 会话/表示层 | TLS record、握手、密钥交换和会话恢复 |
+| [http1-1](http1-1/) | L7 应用层 | HTTP/1.1 解析、消息 framing、keepalive 和 chunked |
+| [http2](http2/) | L7 应用层 | HTTP/2 frame、stream、HPACK 和流控 |
+| [quic-http3](quic-http3/) | L4+L7 传输/应用层 | QUIC packet、ACK/loss、拥塞控制和 HTTP/3 |
+| [rpc](rpc/) | L7 应用层 | protobuf 编码、gRPC call、metadata、deadline 和取消 |
+| [high-performance](high-performance/) | 横向（数据路径） | Reactor、epoll、io_uring、零拷贝和高速 I/O |
+| [rdma](rdma/) | L4/L5 传输层（旁路） | MR、QP、WR/WC、CQ、RDMA CM 和 RoCE |
+| [custom-protocol](custom-protocol/) | L7 应用层 | RESP、MySQL、Kafka 与自定义协议设计方法 |
 
 ## 推荐阅读顺序
 

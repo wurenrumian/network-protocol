@@ -42,6 +42,100 @@
 - `src/upstream/lib/netdev.c`：`netdev_send()` 与端口抽象。
 - `src/upstream/lib/flow.c:349` 的 `parse_vlan()`：802.1Q 标签解析。
 
+## 代码结构
+
+### 对象模型
+
+OVS 不用「单个端口」当转发单位，而用 **bundle**：一个 bundle 可以只含一个端口，也可以是
+LACP/bond 聚合组。VLAN 配置、`floodable`、LACP 挂在 bundle 上；STP 状态挂在 ofport 上，
+再反馈给 bundle（非 Forwarding → 整组不可泛洪）。
+
+```mermaid
+classDiagram
+    direction LR
+    class ofproto_dpif {
+        +bundles hmap
+        +ml mac_learning
+        +ms mcast_snooping
+        +stp / rstp 引擎
+    }
+    class ofbundle {
+        +ports list
+        +vlan_mode int
+        +vlan int
+        +trunks bitmap
+        +lacp lacp
+        +bond bond
+        +floodable bool
+    }
+    class ofport_dpif {
+        +odp_port int
+        +bundle 指针
+        +stp_port / stp_state
+        +rstp_port
+        +lldp / cfm / bfd
+    }
+    class netdev {
+        +send()
+        +rxq_recv()
+    }
+    class dpif {
+        +execute()
+        +flow_put()
+        +recv()
+    }
+
+    ofproto_dpif "1" *-- "many" ofbundle : 拥有
+    ofproto_dpif "1" *-- "many" ofport_dpif : 拥有
+    ofbundle "1" o-- "many" ofport_dpif : 聚合
+    ofport_dpif "1" --> "1" netdev : 封装设备
+    ofproto_dpif "1" --> "1" dpif : 提交报文
+```
+
+关系记号：`*--` 组合（生命周期随拥有者）、`o--` 聚合、`-->` 依赖。
+
+### 两条闭环
+
+数据面（收一帧 → 发出去）：`flow.c` 解析 → `ofproto-dpif.c` 查表/翻译 → `dpif.c` 落地 → `netdev.c` 出端口。
+
+```mermaid
+flowchart LR
+    A["netdev 收帧"] --> B["flow_extract()<br/>帧 → struct flow"]
+    B --> C["rule_dpif_lookup_in_table()<br/>流表查找"]
+    C --> D["xlate_actions()<br/>flow+动作 → datapath 动作"]
+    D --> E["dpif_execute()<br/>提交 datapath"]
+    E --> F["netdev_send()<br/>出端口发帧"]
+```
+
+控制面：`run()` 本身无状态，只是调度器；各子状态机变化后统一改 `need_revalidate`、
+冲刷学习表、更新 STP 状态与 `floodable`。
+
+```mermaid
+flowchart TD
+    R["run()<br/>周期调度器"] --> B["bundle_run()<br/>LACP / bond"]
+    R --> S["stp_run()<br/>STP 时钟"]
+    R --> M["mac_learning_run()<br/>学习表老化"]
+    S --> U["update_stp_port_state()"]
+    U -->|学习能力变化| F1["mac_learning_flush()"]
+    U -->|转发能力变化| F2["bundle_update() + REV_STP"]
+    B -->|成员集变化| F3["REV_BOND"]
+    M -->|条目老化| F4["REV_MAC_LEARNING"]
+    F1 --> V["need_revalidate → 流表重验证"]
+    F2 --> V
+    F3 --> V
+    F4 --> V
+```
+
+### 三层映射
+
+协议概念到源码对象要经过三次映射，读源码时按「改哪个字段、置哪个 revalidate」看即可：
+
+| 协议概念 | 实现载体 |
+| --- | --- |
+| 端口 | `ofport_dpif`（STP 状态），聚合/转发判定看 `ofbundle` |
+| 隔离域 | bundle 上的 `vlan` / `trunks`（`vlan-bitmap.c`） |
+| 去环 | `ofport_dpif.stp_state`（结果）；状态机在未复制的 `stp.c` |
+
 ## 主实现 / 对照实现
 
 按 `protocol-learning-design.md` §4.0 选型：
